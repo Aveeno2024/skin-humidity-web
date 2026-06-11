@@ -116,6 +116,10 @@
         
         async function loadData() {
             const resultDiv = document.getElementById('result');
+            if (!resultDiv) {
+                console.log('找不到 result 元素');
+                return;
+            }
             resultDiv.innerHTML = '<div class="loading">📊 載入中...</div>';
             
             try {
@@ -133,6 +137,7 @@
         }
         
         function displayResults(data) {
+            const resultDiv = document.getElementById('result');
             const date = new Date();
             const dateStr = `${date.getMonth()+1}/${date.getDate()}`;
             
@@ -170,11 +175,17 @@
             
             resultDiv.innerHTML = html;
             const now = new Date();
-            document.getElementById('lastUpdate').innerHTML = `最後更新：${now.toLocaleTimeString()}`;
+            const updateDiv = document.getElementById('lastUpdate');
+            if (updateDiv) {
+                updateDiv.innerHTML = `最後更新：${now.toLocaleTimeString()}`;
+            }
         }
         
-        loadData();
-        setInterval(loadData, 30 * 60 * 1000);
+        // 確保 DOM 載入完成後再執行
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            setInterval(loadData, 30 * 60 * 1000);
+        });
     </script>
 </body>
 </html>
