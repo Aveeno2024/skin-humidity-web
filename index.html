@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>皮膚濕度壓力指數 - 全台摘要</title>
+    <title>皮膚濕度壓力指數 - 六都3天預報</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -12,7 +12,7 @@
             min-height: 100vh;
             padding: 20px;
         }
-        .container { max-width: 500px; margin: 0 auto; }
+        .container { max-width: 600px; margin: 0 auto; }
         .card {
             background: white;
             border-radius: 30px;
@@ -22,7 +22,7 @@
         h1 { font-size: 24px; margin-bottom: 8px; color: #333; }
         .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
         .loading { text-align: center; padding: 40px; color: #999; }
-        .result { margin-top: 10px; min-height: 300px; }
+        .result { margin-top: 10px; }
         .date-badge {
             background: #667eea;
             color: white;
@@ -32,14 +32,28 @@
             font-size: 12px;
             margin-bottom: 15px;
         }
-        .city-row {
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            background: #f0f2f5;
+            padding: 10px 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .table-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
+            padding: 10px 15px;
             border-bottom: 1px solid #f0f0f0;
         }
-        .city-name { font-weight: 500; font-size: 16px; }
+        .city-name { font-weight: 500; font-size: 16px; flex: 2; }
+        .day-cell {
+            flex: 1;
+            text-align: center;
+        }
         .shock-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -114,16 +128,19 @@
     <script>
         const API_BASE = 'https://line-bot-v9q8.onrender.com';
         
+        function getDateString(offset) {
+            const date = new Date();
+            date.setDate(date.getDate() + offset);
+            return `${date.getMonth()+1}/${date.getDate()}`;
+        }
+        
         async function loadData() {
             const resultDiv = document.getElementById('result');
-            if (!resultDiv) {
-                console.log('找不到 result 元素');
-                return;
-            }
+            if (!resultDiv) return;
             resultDiv.innerHTML = '<div class="loading">📊 載入中...</div>';
             
             try {
-                const response = await fetch(`${API_BASE}/api/all-cities-summary`);
+                const response = await fetch(`${API_BASE}/api/all-cities-3days`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -137,29 +154,48 @@
         }
         
         function displayResults(data) {
-            const resultDiv = document.getElementById('result');
-            const date = new Date();
-            const dateStr = `${date.getMonth()+1}/${date.getDate()}`;
+            const today = getDateString(0);
+            const tomorrow = getDateString(1);
+            const dayAfter = getDateString(2);
             
-            let html = `<div style="text-align: center;"><span class="date-badge">📅 ${dateStr} 全台預報</span></div>`;
+            let html = `<div style="text-align: center;"><span class="date-badge">📅 預報日期 ${today} ~ ${dayAfter}</span></div>`;
             
-            if (data.data && data.data.length > 0) {
-                for (const city of data.data) {
-                    let shockClass = '';
-                    if (city.shockLevel === '低衝擊') shockClass = 'shock-low';
-                    else if (city.shockLevel === '中衝擊') shockClass = 'shock-medium';
-                    else if (city.shockLevel === '高衝擊') shockClass = 'shock-high';
-                    else shockClass = 'shock-danger';
-                    
-                    html += `
-                        <div class="city-row">
-                            <span class="city-name">${city.city}</span>
-                            <span class="shock-badge ${shockClass}">${city.shockEmoji} ${city.shockLevel}</span>
-                        </div>
-                    `;
-                }
-            } else {
-                html += '<div class="loading">⚠️ 無資料</div>';
+            // 表頭
+            html += `
+                <div class="table-header">
+                    <span class="city-name">城市</span>
+                    <span class="day-cell">${today}</span>
+                    <span class="day-cell">${tomorrow}</span>
+                    <span class="day-cell">${dayAfter}</span>
+                </div>
+            `;
+            
+            // 各城市資料
+            for (const city of data.data) {
+                let shockClass0 = '', shockClass1 = '', shockClass2 = '';
+                if (city.days[0].shockLevel === '低衝擊') shockClass0 = 'shock-low';
+                else if (city.days[0].shockLevel === '中衝擊') shockClass0 = 'shock-medium';
+                else if (city.days[0].shockLevel === '高衝擊') shockClass0 = 'shock-high';
+                else shockClass0 = 'shock-danger';
+                
+                if (city.days[1].shockLevel === '低衝擊') shockClass1 = 'shock-low';
+                else if (city.days[1].shockLevel === '中衝擊') shockClass1 = 'shock-medium';
+                else if (city.days[1].shockLevel === '高衝擊') shockClass1 = 'shock-high';
+                else shockClass1 = 'shock-danger';
+                
+                if (city.days[2].shockLevel === '低衝擊') shockClass2 = 'shock-low';
+                else if (city.days[2].shockLevel === '中衝擊') shockClass2 = 'shock-medium';
+                else if (city.days[2].shockLevel === '高衝擊') shockClass2 = 'shock-high';
+                else shockClass2 = 'shock-danger';
+                
+                html += `
+                    <div class="table-row">
+                        <span class="city-name">${city.city}</span>
+                        <span class="day-cell"><span class="shock-badge ${shockClass0}">${city.days[0].shockEmoji} ${city.days[0].shockLevel}</span></span>
+                        <span class="day-cell"><span class="shock-badge ${shockClass1}">${city.days[1].shockEmoji} ${city.days[1].shockLevel}</span></span>
+                        <span class="day-cell"><span class="shock-badge ${shockClass2}">${city.days[2].shockEmoji} ${city.days[2].shockLevel}</span></span>
+                    </div>
+                `;
             }
             
             html += `
@@ -180,12 +216,9 @@
             resultDiv.innerHTML = html;
             const now = new Date();
             const updateDiv = document.getElementById('lastUpdate');
-            if (updateDiv) {
-                updateDiv.innerHTML = `最後更新：${now.toLocaleTimeString()}`;
-            }
+            if (updateDiv) updateDiv.innerHTML = `最後更新：${now.toLocaleTimeString()}`;
         }
         
-        // 確保 DOM 載入完成後再執行
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
                 loadData();
